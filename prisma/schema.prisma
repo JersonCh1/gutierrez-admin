@@ -47,6 +47,7 @@ model RefreshToken {
 
 enum Role {
   SUPERADMIN
+  ADMIN_OPERATIVO
   ABOGADO
   ASISTENTE
   CLIENTE

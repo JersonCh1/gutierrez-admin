@@ -1,23 +1,15 @@
-import NextAuth, { type DefaultSession } from "next-auth"
+import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "./prisma"
+import { authConfig, type AdminRole } from "./auth.config"
 
-export type AdminRole = "SUPERADMIN" | "ABOGADO" | "ASISTENTE" | "ADMIN_OPERATIVO"
+const ADMIN_ROLES: AdminRole[] = ["SUPERADMIN", "ADMIN_OPERATIVO", "ABOGADO", "ASISTENTE"]
 
-declare module "next-auth" {
-  interface Session {
-    user: { id: string; role: AdminRole } & DefaultSession["user"]
-  }
-  interface User { role: AdminRole }
-}
-
-const ADMIN_ROLES: AdminRole[] = ["SUPERADMIN", "ABOGADO", "ASISTENTE", "ADMIN_OPERATIVO"]
+export { type AdminRole } from "./auth.config"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  trustHost: true,
-  session: { strategy: "jwt", maxAge: 60 * 60 * 8 },
-  pages: { signIn: "/login" },
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -45,18 +37,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-        token.role = (user as { role: AdminRole }).role
-      }
-      return token
-    },
-    async session({ session, token }) {
-      session.user.id = token.id as string
-      session.user.role = token.role as AdminRole
-      return session
-    },
-  },
 })
