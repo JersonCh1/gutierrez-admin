@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      Role     @default(CLIENTE)
+  googleId  String?
+  password  String?
+  pushToken String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+
+  consultas     Consulta[]
+  casos         Caso[]         @relation("ClienteCasos")
+  mensajes      Mensaje[]
+  progresos     Progreso[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id          String    @id @default(cuid())
+  userId      String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  rotatedFrom String?
+  userAgent   String?
+  ip          String?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+enum Role {
+  SUPERADMIN
+  ABOGADO
+  ASISTENTE
+  CLIENTE
+}
+
+model Abogado {
+  id      String  @id @default(cuid())
+  slug    String  @unique
+  nombre  String
+  cargo   String
+  bio     String
+  fotoUrl String?
+  email   String?
+  grado   String?
+  orden   Int     @default(0)
+  activo  Boolean @default(true)
+
+  @@map("abogados")
+}
+
+model Sede {
+  id        String  @id @default(cuid())
+  nombre    String
+  direccion String
+  lat       Float
+  lng       Float
+  horario   String
+  whatsapp  String
+  telefono  String?
+  fotoUrl   String?
+  orden     Int     @default(0)
+  activa    Boolean @default(true)
+
+  @@map("sedes")
+}
+
+model Curso {
+  id               String    @id @default(cuid())
+  slug             String    @unique
+  titulo           String
+  descripcion      String
+  descripcionLarga String?
+  precio           Decimal   @db.Decimal(10, 2)
+  modalidad        Modalidad
+  portadaUrl       String?
+  duracionHoras    Int?
+  activo           Boolean   @default(false)
+  fechaInicio      DateTime?
+  createdAt        DateTime  @default(now())
+
+  modulos       Modulo[]
+  inscripciones Inscripcion[]
+
+  @@map("cursos")
+}
+
+enum Modalidad {
+  GRABADO
+  ZOOM_EN_VIVO
+  HIBRIDO
+}
+
+model Modulo {
+  id        String    @id @default(cuid())
+  titulo    String
+  orden     Int
+  cursoId   String
+  curso     Curso     @relation(fields: [cursoId], references: [id])
+  lecciones Leccion[]
+
+  @@index([cursoId])
+  @@map("modulos")
+}
+
+model Leccion {
+  id       String  @id @default(cuid())
+  titulo   String
+  orden    Int
+  duracion Int     @default(0)
+  videoUrl String?
+  moduloId String
+  modulo   Modulo  @relation(fields: [moduloId], references: [id])
+
+  @@index([moduloId])
+  @@map("lecciones")
+}
+
+model Inscripcion {
+  id          String            @id @default(cuid())
+  userId      String
+  cursoId     String
+  pagoId      String?
+  estado      EstadoInscripcion @default(PENDIENTE)
+  certificado String?
+  createdAt   DateTime          @default(now())
+
+  curso Curso @relation(fields: [cursoId], references: [id])
+  pago  Pago? @relation(fields: [pagoId], references: [id])
+
+  @@index([userId])
+  @@index([cursoId])
+  @@index([pagoId])
+  @@map("inscripciones")
+}
+
+enum EstadoInscripcion {
+  PENDIENTE
+  ACTIVA
+  COMPLETADA
+  CANCELADA
+}
+
+model Consulta {
+  id          String         @id @default(cuid())
+  userId      String?
+  pagoId      String?
+  tipo        TipoConsulta
+  nombre      String
+  email       String
+  telefono    String
+  descripcion String
+  fecha       DateTime
+  sede        String?
+  zoomUrl     String?
+  estado      EstadoConsulta @default(PENDIENTE)
+  createdAt   DateTime       @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+  pago Pago? @relation(fields: [pagoId], references: [id])
+
+  @@index([userId])
+  @@index([pagoId])
+  @@index([fecha])
+  @@map("consultas")
+}
+
+enum TipoConsulta {
+  PRESENCIAL
+  VIRTUAL_ZOOM
+  EMPRESARIAL
+}
+
+enum EstadoConsulta {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}
+
+model Pago {
+  id            String     @id @default(cuid())
+  culqiChargeId String     @unique
+  monto         Decimal    @db.Decimal(10, 2)
+  estado        EstadoPago @default(PENDIENTE)
+  concepto      String
+  email         String
+  createdAt     DateTime   @default(now())
+
+  inscripciones Inscripcion[]
+  consultas     Consulta[]
+
+  @@map("pagos")
+}
+
+enum EstadoPago {
+  PENDIENTE
+  COMPLETADO
+  FALLIDO
+}
+
+model Articulo {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  titulo    String
+  resumen   String
+  contenido String
+  portada   String?
+  publicado Boolean  @default(false)
+  categoria String
+  tags      String[]
+  autorId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("articulos")
+}
+
+model Caso {
+  id         String     @id @default(cuid())
+  expediente String?
+  titulo     String
+  delito     String
+  etapa      EtapaPenal @default(INVESTIGACION_PRELIMINAR)
+  estado     EstadoCaso @default(ACTIVO)
+  abogadoId  String?
+  clienteId  String
+  juzgado    String?
+  descripcion String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  cliente    User        @relation("ClienteCasos", fields: [clienteId], references: [id])
+  documentos Documento[]
+  mensajes   Mensaje[]
+  audiencias Audiencia[]
+
+  @@index([clienteId])
+  @@index([abogadoId])
+  @@index([estado])
+  @@map("casos")
+}
+
+model Documento {
+  id        String   @id @default(cuid())
+  casoId    String
+  nombre    String
+  tipo      String
+  url       String
+  tamaño    String?
+  createdAt DateTime @default(now())
+
+  caso Caso @relation(fields: [casoId], references: [id])
+
+  @@index([casoId])
+  @@map("documentos")
+}
+
+model Mensaje {
+  id        String   @id @default(cuid())
+  casoId    String
+  autorId   String
+  contenido String
+  esAbogado Boolean  @default(false)
+  leido     Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  caso  Caso @relation(fields: [casoId], references: [id])
+  autor User @relation(fields: [autorId], references: [id])
+
+  @@index([casoId, createdAt])
+  @@index([autorId])
+  @@index([leido])
+  @@map("mensajes")
+}
+
+model Audiencia {
+  id        String   @id @default(cuid())
+  casoId    String
+  titulo    String
+  fecha     DateTime
+  juzgado   String
+  sala      String?
+  tipo      String
+  resultado String?
+  createdAt DateTime @default(now())
+
+  caso Caso @relation(fields: [casoId], references: [id])
+
+  @@index([casoId, fecha])
+  @@map("audiencias")
+}
+
+model Progreso {
+  id        String   @id @default(cuid())
+  userId    String
+  leccionId String
+  segundos  Int      @default(0)
+  completada Boolean @default(false)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, leccionId])
+  @@map("progresos")
+}
+
+enum EtapaPenal {
+  INVESTIGACION_PRELIMINAR
+  INVESTIGACION_PREPARATORIA
+  ETAPA_INTERMEDIA
+  JUZGAMIENTO
+  IMPUGNACION
+  EJECUCION_SENTENCIA
+}
+
+enum EstadoCaso {
+  ACTIVO
+  SUSPENDIDO
+  CERRADO
+}
+
+// ─── Redes sociales ─────────────────────────────────────────────────────────
+
+enum Plataforma {
+  INSTAGRAM
+  TWITTER
+  FACEBOOK
+}
+
+model SocialAccount {
+  id          String     @id @default(cuid())
+  plataforma  Plataforma
+  accessToken String
+  accountId   String
+  username    String
+  activa      Boolean    @default(true)
+  ultimaSync  DateTime?
+  createdAt   DateTime   @default(now())
+
+  posts SocialPost[]
+
+  @@map("social_accounts")
+}
+
+model SocialPost {
+  id           String     @id @default(cuid())
+  accountId    String
+  externalId   String     @unique
+  plataforma   Plataforma
+  texto        String
+  imagenUrl    String?
+  videoUrl     String?
+  url          String
+  likes        Int        @default(0)
+  publicadoEn  DateTime
+  sincronizado DateTime   @default(now())
+  visible      Boolean    @default(true)
+
+  account SocialAccount @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@index([visible, publicadoEn])
+  @@map("social_posts")
+}
