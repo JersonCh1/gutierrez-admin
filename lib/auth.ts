@@ -2,11 +2,17 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import { prisma } from "./prisma"
-import { authConfig, type AdminRole } from "./auth.config"
+import { authConfig } from "./auth.config"
+import type { Role } from "./auth.config"
 
-const ADMIN_ROLES: AdminRole[] = ["SUPERADMIN", "ADMIN_OPERATIVO", "ABOGADO", "ASISTENTE"]
+// El portal web acepta TODOS los roles. Cada uno se redirige a su zona:
+//   CLIENTE                                  → /cliente
+//   SUPERADMIN, ADMIN_OPERATIVO, ABOGADO, ASISTENTE → /dashboard
+const ACCEPTED_ROLES: Role[] = [
+  "SUPERADMIN", "ADMIN_OPERATIVO", "ABOGADO", "ASISTENTE", "CLIENTE",
+]
 
-export { type AdminRole } from "./auth.config"
+export { type AdminRole, type Role } from "./auth.config"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -23,7 +29,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await prisma.user.findUnique({ where: { email } })
         if (!user?.password) return null
-        if (!ADMIN_ROLES.includes(user.role as AdminRole)) return null
+        if (!ACCEPTED_ROLES.includes(user.role as Role)) return null
 
         const ok = await bcrypt.compare(password, user.password)
         if (!ok) return null
@@ -32,7 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id:    user.id,
           email: user.email,
           name:  user.name,
-          role:  user.role as AdminRole,
+          role:  user.role as Role,
         }
       },
     }),
