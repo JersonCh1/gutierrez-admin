@@ -119,9 +119,12 @@ de registrar su caso.
 La aplicación web que usa el equipo del estudio para operar el ecosistema. Es
 lo que alimenta la app móvil con datos reales.
 
-Acceso: dirección que se asigne al hacer deploy (p. ej.
-`admin.gutierrezolivaabogados.com`). En desarrollo local corre en
-`http://localhost:3002`.
+Acceso público en producción: **`https://gutierrez-admin.vercel.app`**.
+En desarrollo local corre en `http://localhost:3002`.
+
+Cuando se asigne el dominio definitivo del estudio (ej.
+`admin.gutierrezolivaabogados.com`), se apunta el DNS a Vercel desde el
+panel de Vercel del proyecto `gutierrez-admin`.
 
 ### Acceso
 
