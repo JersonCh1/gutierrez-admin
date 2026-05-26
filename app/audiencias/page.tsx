@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { AdminShell } from "@/components/admin-shell"
 import { PageHeader } from "@/components/page-header"
 import { EmptyState } from "@/components/empty-state"
@@ -5,6 +6,7 @@ import { Forbidden } from "@/components/forbidden"
 import { StatPill } from "@/components/stat-pill"
 import { prisma } from "@/lib/prisma"
 import { requirePermission } from "@/lib/guard"
+import { can } from "@/lib/permissions"
 
 export default async function AudienciasPage() {
   const g = await requirePermission("audiencias.viewAny")
@@ -42,6 +44,9 @@ export default async function AudienciasPage() {
           eyebrow="CALENDARIO DEL PROCESO"
           title="Audiencias."
           caption="Programación cronológica de todas las audiencias del estudio."
+          action={can(g.role, "audiencias.crud") ? (
+            <Link href="/audiencias/nueva" className="btn-gold">Nueva audiencia</Link>
+          ) : undefined}
         />
 
         <div className="grid grid-cols-3 gap-12 mb-14">

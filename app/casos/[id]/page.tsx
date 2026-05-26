@@ -6,6 +6,8 @@ import { requirePermission } from "@/lib/guard"
 import { can } from "@/lib/permissions"
 import { notFound } from "next/navigation"
 import Link from "next/link"
+import { AvanzarEtapaForm } from "./avanzar-etapa-form"
+import { ResponderForm } from "./responder-form"
 
 const ETAPAS = [
   "INVESTIGACION_PRELIMINAR",
@@ -67,7 +69,12 @@ export default async function CasoDetail({ params }: { params: Promise<{ id: str
 
         {/* Timeline editorial */}
         <section className="mb-14">
-          <p className="eyebrow mb-6">LÍNEA DE TIEMPO DEL PROCESO</p>
+          <div className="flex items-end justify-between gap-6 mb-6">
+            <p className="eyebrow">LÍNEA DE TIEMPO DEL PROCESO</p>
+            {can(g.role, "casos.editEtapa") && (g.role !== "ABOGADO" || caso.abogadoId === g.session.user.id) && (
+              <AvanzarEtapaForm casoId={caso.id} etapaActual={caso.etapa} />
+            )}
+          </div>
           <ol className="space-y-5">
             {ETAPAS.map((e, i) => {
               const completed = i < etapaIndex
@@ -117,7 +124,12 @@ export default async function CasoDetail({ params }: { params: Promise<{ id: str
 
           {/* Últimos documentos */}
           <section>
-            <p className="eyebrow mb-4">ÚLTIMOS DOCUMENTOS</p>
+            <div className="flex items-end justify-between mb-4">
+              <p className="eyebrow">ÚLTIMOS DOCUMENTOS</p>
+              <Link href={`/casos/${caso.id}/documentos`} className="eyebrow text-gold" style={{ fontSize: 10 }}>
+                Ver todos →
+              </Link>
+            </div>
             {caso.documentos.length === 0 ? (
               <p className="text-silver text-[14px]">No hay documentos en el expediente.</p>
             ) : (
@@ -151,6 +163,11 @@ export default async function CasoDetail({ params }: { params: Promise<{ id: str
                     <div className="rule-28 mt-3 opacity-60" />
                   </div>
                 ))}
+              </div>
+            )}
+            {can(g.role, "mensajes.respond") && (g.role !== "ABOGADO" || caso.abogadoId === g.session.user.id) && (
+              <div className="mt-8">
+                <ResponderForm casoId={caso.id} />
               </div>
             )}
           </section>

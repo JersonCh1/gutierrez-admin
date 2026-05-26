@@ -6,6 +6,8 @@ import { Forbidden } from "@/components/forbidden"
 import { StatPill } from "@/components/stat-pill"
 import { prisma } from "@/lib/prisma"
 import { requirePermission } from "@/lib/guard"
+import { can } from "@/lib/permissions"
+import { ConsultaActions } from "./consulta-actions"
 
 type Row = {
   id: string
@@ -60,12 +62,18 @@ export default async function ConsultasPage() {
   const confirmadas = rows.filter((r) => r.estado === "CONFIRMADA").length
   const completadas = rows.filter((r) => r.estado === "COMPLETADA").length
 
+  const puedeActuar = can(g.role, "consultas.confirmCancel")
+
   const columns: Column<Row>[] = [
     { key: "nombre", label: "SOLICITANTE",  className: "col-span-3", render: (r) => <span className="font-serif text-[17px] text-white">{r.nombre}</span> },
     { key: "tipo",   label: "MODALIDAD",    className: "col-span-2", render: (r) => TIPO_LABEL[r.tipo] ?? r.tipo },
-    { key: "fecha",  label: "FECHA",        className: "col-span-3", render: (r) => <span className="text-cream capitalize">{r.fecha.toLocaleDateString("es-PE", { weekday: "long", day: "numeric", month: "long" })}</span> },
-    { key: "sede",   label: "SEDE",         className: "col-span-2", render: (r) => <span className="text-silver">{r.sede ?? "—"}</span> },
+    { key: "fecha",  label: "FECHA",        className: puedeActuar ? "col-span-2" : "col-span-3", render: (r) => <span className="text-cream capitalize">{r.fecha.toLocaleDateString("es-PE", { weekday: "long", day: "numeric", month: "long" })}</span> },
+    { key: "sede",   label: "SEDE",         className: puedeActuar ? "col-span-1" : "col-span-2", render: (r) => <span className="text-silver">{r.sede ?? "—"}</span> },
     { key: "est",    label: "ESTADO",       className: "col-span-2", render: (r) => <span className={ESTADO_TONE[r.estado]}>{ESTADO_LABEL[r.estado] ?? r.estado}</span> },
+    ...(puedeActuar ? [{
+      key: "acc", label: "ACCIONES", className: "col-span-2",
+      render: (r: Row) => <ConsultaActions id={r.id} estado={r.estado} tipo={r.tipo} fechaActualISO={r.fecha.toISOString()} />,
+    } satisfies Column<Row>] : []),
   ]
 
   return (

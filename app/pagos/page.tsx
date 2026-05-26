@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { AdminShell } from "@/components/admin-shell"
 import { PageHeader } from "@/components/page-header"
 import { EmptyState } from "@/components/empty-state"
@@ -6,6 +7,7 @@ import { Forbidden } from "@/components/forbidden"
 import { StatPill } from "@/components/stat-pill"
 import { prisma } from "@/lib/prisma"
 import { requirePermission } from "@/lib/guard"
+import { can } from "@/lib/permissions"
 
 type Row = {
   id: string
@@ -61,6 +63,9 @@ export default async function PagosPage() {
           eyebrow="MOVIMIENTOS DEL ESTUDIO"
           title="Pagos."
           caption="Movimientos recibidos por Culqi, Yape y BCP. Los pagos manuales se registran desde 'Nuevo pago'."
+          action={can(g.role, "pagos.registerManual") ? (
+            <Link href="/pagos/nuevo" className="btn-gold">Registrar pago</Link>
+          ) : undefined}
         />
 
         <div className="grid grid-cols-3 gap-12 mb-14">
